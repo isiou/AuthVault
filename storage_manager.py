@@ -1,17 +1,53 @@
 import json
 import os
 import uuid
+import sys
 from datetime import datetime
 from cryptography.fernet import Fernet
+
+# 应用名称
+APP_NAME = "AuthVault"
+
+# 数据文件名
+DATA_FILE = "data.vault"
+KEY_FILE = "secret.key"
+
+
+def get_app_data_dir():
+    """
+    获取应用数据目录
+    Windows: %LOCALAPPDATA%/AuthVault/
+    Linux/Mac: ~/.authvault/
+    """
+    if sys.platform == "win32":
+        # Windows 系统
+        base_dir = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+        app_dir = os.path.join(base_dir, APP_NAME)
+    else:
+        # Linux 或 Mac 系统
+        app_dir = os.path.join(os.path.expanduser("~"), f".{APP_NAME.lower()}")
+
+    # 确保目录存在
+    if not os.path.exists(app_dir):
+        os.makedirs(app_dir)
+
+    return app_dir
 
 
 class StorageManager:
     """存储管理器类"""
 
-    def __init__(self, data_file="accounts.dat", key_file=".key"):
-        self.data_file = data_file
-        self.key_file = key_file
+    def __init__(self, data_file=None, key_file=None):
+        # 获取应用数据目录
+        app_dir = get_app_data_dir()
+
+        # 设置文件路径
+        self.data_file = data_file or os.path.join(app_dir, DATA_FILE)
+        self.key_file = key_file or os.path.join(app_dir, KEY_FILE)
         self.cipher = None
+
+        # 检查旧文件并迁移
+        self._migrate_old_files()
 
         # 初始化加密
         self._init_encryption()
@@ -19,6 +55,48 @@ class StorageManager:
         # 确保数据文件存在
         if not os.path.exists(self.data_file):
             self._save_data({"accounts": []})
+
+    def _migrate_old_files(self):
+        """迁移旧版本的数据文件"""
+        # 旧文件路径
+        if getattr(sys, "frozen", False):
+            # 打包后的 exe
+            exe_dir = os.path.dirname(sys.executable)
+        else:
+            # 开发环境
+            exe_dir = os.path.dirname(os.path.abspath(__file__))
+
+        old_data_file = os.path.join(exe_dir, "accounts.dat")
+        old_key_file = os.path.join(exe_dir, ".key")
+
+        if os.path.exists(self.key_file) and os.path.exists(self.data_file):
+            return
+
+        # 迁移密钥文件
+        if os.path.exists(old_key_file) and not os.path.exists(self.key_file):
+            try:
+                import shutil
+
+                shutil.copy2(old_key_file, self.key_file)
+            except Exception as e:
+                return None
+
+        # 迁移数据文件
+        if os.path.exists(old_data_file) and not os.path.exists(self.data_file):
+            try:
+                import shutil
+
+                shutil.copy2(old_data_file, self.data_file)
+            except Exception as e:
+                return None
+
+    def get_data_dir(self):
+        """获取数据存储目录"""
+        return os.path.dirname(self.data_file)
+
+    def get_data_file_path(self):
+        """获取数据文件完整路径"""
+        return self.data_file
 
     def _init_encryption(self):
         """初始化加密"""

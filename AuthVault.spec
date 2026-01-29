@@ -5,14 +5,14 @@ a = Analysis(
     ['gui_app.py'],
     pathex=[],
     binaries=[],
-    datas=[('storage_manager.py', '.')],
-    hiddenimports=[],
+    datas=[('storage_manager.py', '.'), ('qr_scanner.py', '.'), ('screenshot_tool.py', '.')],
+    hiddenimports=['PIL', 'PIL.Image', 'PIL.ImageGrab', 'PIL.ImageTk', 'cv2', 'numpy', 'pyotp', 'cryptography'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['matplotlib', 'numpy', 'pandas', 'scipy', 'PIL', 'cv2', 'torch', 'tensorflow'],
+    excludes=[],
     noarchive=False,
-    optimize=2,
+    optimize=0,
 )
 pyz = PYZ(a.pure)
 
@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     a.binaries,
     a.datas,
-    [('O', None, 'OPTION'), ('O', None, 'OPTION')],
+    [],
     name='AuthVault',
     debug=False,
     bootloader_ignore_signals=False,
