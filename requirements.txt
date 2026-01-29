@@ -2,3 +2,4 @@ pyotp
 cryptography
 opencv-python
 pillow
+numpy

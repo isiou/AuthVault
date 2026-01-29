@@ -4,16 +4,36 @@ import pyotp
 import time
 from datetime import datetime
 import threading
+import ctypes
 from storage_manager import StorageManager
 from qr_scanner import scan_qr_and_extract_2fa
+from screenshot_tool import capture_and_decode
+
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+except Exception:
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
 
 
 class TwoFactorAuthGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("2FA 管理器")
-        self.root.geometry("900x600")
-        self.root.minsize(800, 500)
+        # 设置窗口大小和最小尺寸
+        self.root.geometry("1330x800")
+        self.root.minsize(1330, 800)
+
+        # 配置 Treeview 样式
+        style = ttk.Style()
+        # 配置字体
+        style.configure("Treeview", rowheight=36, font=("Microsoft YaHei UI", 10))
+        style.configure(
+            "Treeview.Heading",
+            font=("Microsoft YaHei UI", 10),
+        )
 
         # 初始化存储管理器
         self.storage = StorageManager()
@@ -75,36 +95,39 @@ class TwoFactorAuthGUI:
 
         # 搜索框
         search_frame = ttk.Frame(toolbar)
-        search_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        search_frame.pack(side=tk.LEFT, padx=5)
 
-        ttk.Label(search_frame, text="搜索: ").pack(side=tk.LEFT, padx=5)
+        ttk.Label(search_frame, text="搜索: ").pack(side=tk.LEFT, padx=(0, 5))
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", self.on_search)
-        search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=30)
-        search_entry.pack(side=tk.LEFT, padx=5)
+        search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=20)
+        search_entry.pack(side=tk.LEFT)
 
         # 按钮区域
         button_frame = ttk.Frame(toolbar)
         button_frame.pack(side=tk.RIGHT)
 
-        ttk.Button(button_frame, text="添加账号", command=self.add_account).pack(
-            side=tk.LEFT, padx=2
-        )
         ttk.Button(
-            button_frame, text="编\u3000\u3000辑", command=self.edit_account
-        ).pack(side=tk.LEFT, padx=2)
+            button_frame, text="添\u3000\u3000加", command=self.add_account, width=12
+        ).pack(side=tk.LEFT, padx=1)
         ttk.Button(
-            button_frame, text="删\u3000\u3000除", command=self.delete_account
-        ).pack(side=tk.LEFT, padx=2)
+            button_frame, text="编\u3000\u3000辑", command=self.edit_account, width=12
+        ).pack(side=tk.LEFT, padx=1)
         ttk.Button(
-            button_frame, text="备\u3000\u3000份", command=self.backup_data
-        ).pack(side=tk.LEFT, padx=2)
+            button_frame, text="删\u3000\u3000除", command=self.delete_account, width=12
+        ).pack(side=tk.LEFT, padx=1)
         ttk.Button(
-            button_frame, text="导\u3000\u3000入", command=self.restore_data
-        ).pack(side=tk.LEFT, padx=2)
-        ttk.Button(button_frame, text="扫码添加", command=self.scan_qr_add).pack(
-            side=tk.LEFT, padx=2
-        )
+            button_frame, text="备\u3000\u3000份", command=self.backup_data, width=12
+        ).pack(side=tk.LEFT, padx=1)
+        ttk.Button(
+            button_frame, text="导\u3000\u3000入", command=self.restore_data, width=12
+        ).pack(side=tk.LEFT, padx=1)
+        ttk.Button(
+            button_frame, text="扫码添加", command=self.scan_qr_add, width=12
+        ).pack(side=tk.LEFT, padx=1)
+        ttk.Button(
+            button_frame, text="截图添加", command=self.screenshot_add, width=12
+        ).pack(side=tk.LEFT, padx=1)
 
     def create_account_list(self, parent):
         """创建账号列表"""
@@ -114,19 +137,20 @@ class TwoFactorAuthGUI:
         list_frame.rowconfigure(0, weight=1)
 
         # 创建 Treeview
-        columns = ("name", "note")
+        columns = ("index", "name", "note")
         self.tree = ttk.Treeview(
-            list_frame, columns=columns, show="tree headings", selectmode="browse"
+            list_frame, columns=columns, show="headings", selectmode="browse"
         )
 
         # 定义列
-        self.tree.heading("#0", text="序号")
+        self.tree.heading("index", text="序号")
         self.tree.heading("name", text="账号名称")
         self.tree.heading("note", text="备注")
 
-        self.tree.column("#0", width=50, minwidth=50)
-        self.tree.column("name", width=150, minwidth=100)
-        self.tree.column("note", width=200, minwidth=150)
+        # 设置列宽
+        self.tree.column("index", width=70, minwidth=70, stretch=False, anchor="center")
+        self.tree.column("name", width=250, minwidth=150, stretch=False)
+        self.tree.column("note", width=300, minwidth=150, stretch=True)
 
         # 滚动条
         scrollbar = ttk.Scrollbar(
@@ -248,8 +272,7 @@ class TwoFactorAuthGUI:
                 "",
                 tk.END,
                 iid=account["id"],
-                text=str(idx),
-                values=(account["name"], account["note"]),
+                values=(str(idx), account["name"], account["note"]),
             )
 
         self.update_status(f"已加载 {len(accounts)} 个账号")
@@ -275,8 +298,7 @@ class TwoFactorAuthGUI:
                     "",
                     tk.END,
                     iid=account["id"],
-                    text=str(idx),
-                    values=(account["name"], account["note"]),
+                    values=(str(idx), account["name"], account["note"]),
                 )
 
     def on_account_select(self, event):
@@ -495,6 +517,46 @@ class TwoFactorAuthGUI:
                 messagebox.showinfo("成功", f"账号 '{name}' 已添加！")
             else:
                 messagebox.showerror("错误", message)
+
+    def screenshot_add(self):
+        """截图识别二维码添加账号"""
+
+        def on_result(info, error):
+            """截图识别回调"""
+            if error:
+                messagebox.showerror("错误", f"识别失败:\n{error}")
+                return
+
+            # 显示解析结果并确认添加
+            result_msg = (
+                f"识别成功！\n\n"
+                f"发行者: {info['issuer']}\n"
+                f"账\u3000号: {info['account']}\n"
+                f"密\u3000钥: {info['secret']}\n\n"
+                f"是否添加此账号？"
+            )
+
+            if messagebox.askyesno("确认添加", result_msg):
+                # 生成账号名称
+                if info["issuer"]:
+                    name = f"{info['issuer']} ({info['account']})"
+                else:
+                    name = info["account"]
+
+                # 添加账号
+                success, message = self.storage.add_account(
+                    name, info["secret"], f"从截图导入 - {info['account']}"
+                )
+
+                if success:
+                    self.load_accounts()
+                    self.update_status(f"账号 '{name}' 添加成功")
+                    messagebox.showinfo("成功", f"账号 '{name}' 已添加！")
+                else:
+                    messagebox.showerror("错误", message)
+
+        # 启动截图工具
+        capture_and_decode(self.root, on_result)
 
     def start_auto_update(self):
         """启动自动更新线程"""
