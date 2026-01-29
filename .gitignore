@@ -5,5 +5,8 @@ build/
 dist/
 release/
 
+*.spec
+
 *.key
 *.dat
+*.vault

@@ -5,9 +5,10 @@ import time
 from datetime import datetime
 import threading
 import ctypes
-from storage_manager import StorageManager
-from qr_scanner import scan_qr_and_extract_2fa
-from screenshot_tool import capture_and_decode
+
+from src.storage_manager import StorageManager
+from src.qr_scanner import scan_qr_and_extract_2fa
+from src.screenshot_tool import capture_and_decode
 
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(1)

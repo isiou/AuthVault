@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['gui_app.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('storage_manager.py', '.'), ('qr_scanner.py', '.'), ('screenshot_tool.py', '.')],
+    datas=[('src', 'src')],
     hiddenimports=['PIL', 'PIL.Image', 'PIL.ImageGrab', 'PIL.ImageTk', 'cv2', 'numpy', 'pyotp', 'cryptography'],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icon.ico'],
+    icon=['assets\\icon.ico'],
 )

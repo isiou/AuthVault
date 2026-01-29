@@ -33,7 +33,7 @@ pip install -r requirements.txt
 运行应用程序：
 
 ```bash
-python gui_app.py
+python main.py
 ```
 
 ## 打包
@@ -41,15 +41,31 @@ python gui_app.py
 使用 PyInstaller 构建可执行文件：
 
 ```bash
-python build.py
+python scripts/build.py
 ```
 
 ## 项目结构
 
-- `gui_app.py` - 主应用程序和 GUI 实现
-- `storage_manager.py` - 凭证存储和管理模块
-- `build.py` - PyInstaller 构建脚本
-- `AuthVault.spec` - PyInstaller 配置文件
+```
+AuthVault/
+├── main.py                 # 程序入口
+├── requirements.txt        # Python 依赖
+├── LICENSE                 # 许可证
+├── README.md              # 项目说明
+│
+├── src/                   # 源代码目录
+│   ├── __init__.py
+│   ├── gui_app.py         # 主应用程序和 GUI 实现
+│   ├── storage_manager.py # 凭证存储和管理模块
+│   ├── qr_scanner.py      # 二维码扫描模块
+│   └── screenshot_tool.py # 截图工具模块
+│
+├── assets/                # 资源文件目录
+│   └── icon.ico           # 应用图标
+│
+└── scripts/               # 脚本目录
+    └── build.py           # PyInstaller 构建脚本
+```
 
 ## 许可证
 

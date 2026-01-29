@@ -4,16 +4,17 @@ import shutil
 import subprocess
 from pathlib import Path
 
+# 切换到项目根目录
+PROJECT_ROOT = Path(__file__).parent.parent
+os.chdir(PROJECT_ROOT)
+
 # 应用信息
 APP_NAME = "AuthVault"
-MAIN_SCRIPT = "gui_app.py"
-ICON_FILE = "icon.ico"
+MAIN_SCRIPT = "main.py"
+ICON_FILE = "assets/icon.ico"
 
-INCLUDE_FILES = [
-    "storage_manager.py",
-    "qr_scanner.py",
-    "screenshot_tool.py",
-]
+# 源代码目录
+SRC_DIR = "src"
 
 EXCLUDE_MODULES = []
 
@@ -34,7 +35,7 @@ def clean_build():
     """清理构建目录"""
     print("清理旧的构建文件...")
 
-    dirs_to_remove = ["build", "dist", "__pycache__"]
+    dirs_to_remove = ["build", "dist", "__pycache__", "src/__pycache__"]
 
     for dir_name in dirs_to_remove:
         if os.path.exists(dir_name):
@@ -90,10 +91,8 @@ def build_exe():
     # 添加图标
     args.extend(icon_arg)
 
-    # 添加数据文件
-    for file in INCLUDE_FILES:
-        if os.path.exists(file):
-            args.append(f"--add-data={file};.")
+    # 添加 src 目录到数据文件
+    args.append(f"--add-data={SRC_DIR};{SRC_DIR}")
 
     # 添加隐式导入
     for module in HIDDEN_IMPORTS:
@@ -149,6 +148,8 @@ def main():
     """主函数"""
     print("=" * 60)
     print(f"{APP_NAME} 打包工具")
+    print("=" * 60)
+    print(f"项目根目录: {PROJECT_ROOT}")
     print("=" * 60)
 
     # 检查 PyInstaller
