@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 import threading
 from storage_manager import StorageManager
+from qr_scanner import scan_qr_and_extract_2fa
 
 
 class TwoFactorAuthGUI:
@@ -89,16 +90,19 @@ class TwoFactorAuthGUI:
         ttk.Button(button_frame, text="添加账号", command=self.add_account).pack(
             side=tk.LEFT, padx=2
         )
-        ttk.Button(button_frame, text="编辑", command=self.edit_account).pack(
-            side=tk.LEFT, padx=2
-        )
-        ttk.Button(button_frame, text="删除", command=self.delete_account).pack(
-            side=tk.LEFT, padx=2
-        )
-        ttk.Button(button_frame, text="备份", command=self.backup_data).pack(
-            side=tk.LEFT, padx=2
-        )
-        ttk.Button(button_frame, text="导入", command=self.restore_data).pack(
+        ttk.Button(
+            button_frame, text="编\u3000\u3000辑", command=self.edit_account
+        ).pack(side=tk.LEFT, padx=2)
+        ttk.Button(
+            button_frame, text="删\u3000\u3000除", command=self.delete_account
+        ).pack(side=tk.LEFT, padx=2)
+        ttk.Button(
+            button_frame, text="备\u3000\u3000份", command=self.backup_data
+        ).pack(side=tk.LEFT, padx=2)
+        ttk.Button(
+            button_frame, text="导\u3000\u3000入", command=self.restore_data
+        ).pack(side=tk.LEFT, padx=2)
+        ttk.Button(button_frame, text="扫码添加", command=self.scan_qr_add).pack(
             side=tk.LEFT, padx=2
         )
 
@@ -442,6 +446,56 @@ class TwoFactorAuthGUI:
                 else:
                     messagebox.showerror("错误", f"恢复失败: {message}")
 
+    def scan_qr_add(self):
+        """扫描二维码添加账号"""
+        filename = filedialog.askopenfilename(
+            title="选择二维码图片",
+            filetypes=[
+                ("图片文件", "*.png *.jpg *.jpeg *.bmp *.gif"),
+                ("PNG 文件", "*.png"),
+                ("JPEG 文件", "*.jpg *.jpeg"),
+                ("所有文件", "*.*"),
+            ],
+        )
+
+        if not filename:
+            return
+
+        # 解析二维码
+        info, error = scan_qr_and_extract_2fa(filename)
+
+        if error:
+            messagebox.showerror("错误", f"二维码解析失败: \n{error}")
+            return
+
+        # 显示解析结果并确认添加
+        result_msg = (
+            f"解析成功！\n\n"
+            f"发行者: {info['issuer']}\n"
+            f"账号: {info['account']}\n"
+            f"密钥: {info['secret']}\n\n"
+            f"是否添加此账号？"
+        )
+
+        if messagebox.askyesno("确认添加", result_msg):
+            # 生成账号名称
+            if info["issuer"]:
+                name = f"{info['issuer']} ({info['account']})"
+            else:
+                name = info["account"]
+
+            # 添加账号
+            success, message = self.storage.add_account(
+                name, info["secret"], f"从二维码导入 - {info['account']}"
+            )
+
+            if success:
+                self.load_accounts()
+                self.update_status(f"账号 '{name}' 添加成功")
+                messagebox.showinfo("成功", f"账号 '{name}' 已添加！")
+            else:
+                messagebox.showerror("错误", message)
+
     def start_auto_update(self):
         """启动自动更新线程"""
         self.update_running = True
@@ -495,13 +549,13 @@ class AccountDialog(simpledialog.Dialog):
         self.name_entry = ttk.Entry(master, width=40)
         self.name_entry.grid(row=0, column=1, pady=5, padx=5)
 
-        ttk.Label(master, text="密钥:").grid(
+        ttk.Label(master, text="密\u3000\u3000钥:").grid(
             row=1, column=0, sticky=tk.W, pady=5, padx=5
         )
         self.secret_entry = ttk.Entry(master, width=40)
         self.secret_entry.grid(row=1, column=1, pady=5, padx=5)
 
-        ttk.Label(master, text="备注:").grid(
+        ttk.Label(master, text="备\u3000\u3000注:").grid(
             row=2, column=0, sticky=tk.W, pady=5, padx=5
         )
         self.note_entry = ttk.Entry(master, width=40)
