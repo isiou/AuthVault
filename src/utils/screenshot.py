@@ -1,6 +1,20 @@
+"""
+截图工具
+提供屏幕截图和二维码识别功能
+"""
+
 import tkinter as tk
 from PIL import Image, ImageGrab, ImageTk
 import ctypes
+import sys
+import os
+
+# 添加路径处理
+if __name__ == "__main__" or "src." not in __name__:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(os.path.dirname(current_dir))
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
 
 
 class ScreenshotTool:
@@ -302,26 +316,17 @@ def capture_and_decode(parent_window, callback):
         parent_window: 父窗口
         callback: 回调函数，接收(info, error)参数
     """
-    import sys
-    import os
-
-    # 添加路径处理
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
-
     try:
-        from src.qr_service import get_qr_service
-        from src.exceptions import (
+        from src.utils.qr_decoder import get_qr_decoder
+        from src.utils.exceptions import (
             QRCodeNotFoundError,
             InvalidQRCodeError,
             InvalidOTPAuthURIError,
             QRCodeException,
         )
     except ImportError:
-        from qr_service import get_qr_service
-        from exceptions import (
+        from utils.qr_decoder import get_qr_decoder
+        from utils.exceptions import (
             QRCodeNotFoundError,
             InvalidQRCodeError,
             InvalidOTPAuthURIError,
@@ -331,10 +336,10 @@ def capture_and_decode(parent_window, callback):
     def on_capture(image):
         """截图完成回调"""
         try:
-            qr_service = get_qr_service()
+            qr_decoder = get_qr_decoder()
 
             # 使用统一的二维码服务解析
-            info = qr_service.extract_2fa_from_image(image)
+            info = qr_decoder.extract_2fa_from_image(image)
             callback(info, None)
 
         except QRCodeNotFoundError:
@@ -351,23 +356,3 @@ def capture_and_decode(parent_window, callback):
     # 创建截图工具并启动
     tool = ScreenshotTool(callback=on_capture)
     tool.start(parent_window)
-
-
-if __name__ == "__main__":
-    # 测试截图功能
-    def on_result(info, error):
-        if error:
-            print(f"错误: {error}")
-        else:
-            print(f"成功: {info}")
-        root.destroy()
-
-    root = tk.Tk()
-    root.title("截图测试")
-    root.geometry("300x100")
-
-    tk.Button(
-        root, text="截图识别二维码", command=lambda: capture_and_decode(root, on_result)
-    ).pack(pady=30)
-
-    root.mainloop()

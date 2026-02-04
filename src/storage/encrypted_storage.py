@@ -1,3 +1,8 @@
+"""
+加密存储实现
+提供加密的数据存储功能
+"""
+
 import json
 import os
 import uuid
@@ -9,12 +14,13 @@ from typing import List, Dict, Any, Optional
 # 添加路径处理
 if __name__ == "__main__" or "src." not in __name__:
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
+    parent_dir = os.path.dirname(os.path.dirname(current_dir))
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
 
 try:
-    from src.exceptions import (
+    from src.storage.storage_interface import StorageInterface
+    from src.utils.exceptions import (
         StorageException,
         EncryptionException,
         AccountException,
@@ -22,7 +28,8 @@ try:
         AccountAlreadyExistsError,
     )
 except ImportError:
-    from exceptions import (
+    from storage.storage_interface import StorageInterface
+    from utils.exceptions import (
         StorageException,
         EncryptionException,
         AccountException,
@@ -59,8 +66,8 @@ def get_app_data_dir():
     return app_dir
 
 
-class StorageManager:
-    """存储管理器类"""
+class EncryptedStorage(StorageInterface):
+    """加密存储实现类"""
 
     def __init__(self, data_file=None, key_file=None):
         # 获取应用数据目录
@@ -170,7 +177,8 @@ class StorageManager:
         return data.get("accounts", [])
 
     def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
-        """根据 ID 获取账号
+        """
+        根据 ID 获取账号
 
         Args:
             account_id: 账号ID
@@ -313,7 +321,7 @@ class StorageManager:
         except Exception as e:
             raise StorageException(f"删除账号失败: {str(e)}")
 
-    def backup(self, backup_file):
+    def backup(self, backup_file: str) -> tuple[bool, str]:
         """备份数据到文件"""
         try:
             data = self._load_data()
@@ -337,7 +345,7 @@ class StorageManager:
         except Exception as e:
             return False, str(e)
 
-    def restore(self, backup_file):
+    def restore(self, backup_file: str) -> tuple[bool, str]:
         """从备份文件恢复数据"""
         try:
             with open(backup_file, "rb") as f:
